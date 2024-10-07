@@ -43,4 +43,47 @@ class TaskViewModel(private val dao: TaskDao) : ViewModel() {
             _tasks.value = emptyList() // Vaciamos la lista en el estado
         }
     }
+    fun editTask(task: Task, newDescription: String) {
+        val updatedTask = task.copy(description = newDescription)
+        viewModelScope.launch {
+            dao.updateTask(updatedTask)
+            _tasks.value = dao.getAllTasks() // Recargamos la lista
+        }
+    }
+
+    fun deleteTask(task: Task) {
+        viewModelScope.launch {
+            dao.deleteTask(task) // Asegúrate de tener este método en TaskDao
+            _tasks.value = dao.getAllTasks() // Recargamos la lista
+        }
+    }
+    private val _filter = MutableStateFlow("all") // "all", "completed", "pending"
+    val filter: StateFlow<String> = _filter
+
+    fun setFilter(newFilter: String) {
+        _filter.value = newFilter
+    }
+
+    fun getFilteredTasks(): List<Task> {
+        return when (_filter.value) {
+            "completed" -> _tasks.value.filter { it.isCompleted }
+            "pending" -> _tasks.value.filter { !it.isCompleted }
+            else -> _tasks.value
+        }
+    }
+    private var _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+    fun sortTasks(criteria: String) {
+        _tasks.value = when (criteria) {
+            "name" -> _tasks.value.sortedBy { it.description }
+            "completed" -> _tasks.value.sortedBy { it.isCompleted }
+            // Puedes agregar otros criterios aquí
+            else -> _tasks.value
+        }
+    }
+
 }
